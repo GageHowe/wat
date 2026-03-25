@@ -81,8 +81,25 @@ The expected release asset names are:
 
 - `wat-x86_64-unknown-linux-musl.tar.gz`
 - `wat-aarch64-apple-darwin.tar.gz`
+- `wat-x86_64-apple-darwin.tar.gz`
 - `wat-x86_64-pc-windows-msvc.zip`
 - `wat-aarch64-pc-windows-msvc.zip`
+
+Automatic GitHub Releases are configured in [`.github/workflows/release.yml`](C:\Users\howeg\Documents\Github\wat\.github\workflows\release.yml). Pushing a tag like `v0.1.0` will build and publish:
+
+- `wat-x86_64-unknown-linux-musl.tar.gz`
+- `wat-aarch64-apple-darwin.tar.gz`
+- `wat-x86_64-apple-darwin.tar.gz`
+- `wat-x86_64-pc-windows-msvc.zip`
+
+Windows ARM release packaging is not automated yet, so `wat-aarch64-pc-windows-msvc.zip` would still need to be built and uploaded separately if you want the PowerShell installer to support that target.
+
+Example:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
 
 ## Config format
 
