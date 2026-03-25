@@ -35,9 +35,14 @@ wat run
 
 ## Install
 
-MacOS/Linux
+Linux
 ```bash
 curl -fsSL https://raw.githubusercontent.com/howeg/wat/main/scripts/install.sh | sh
+```
+
+MacOS
+```bash
+curl -fsSL https://raw.githubusercontent.com/howeg/wat/main/scripts/install-macos.sh | sh
 ```
 
 Windows
