@@ -60,15 +60,12 @@ run = ["cargo build -p server"]
 [test]
 watch = ["src/**"]
 run = ["cargo test"]
-
-[deploy]
-run = ["./deploy.sh"]
 ```
 
 ```bash
-wat                  # watches client + server (the default set)
-wat test             # watches only test
-wat deploy --once    # runs deploy once and exits
+wat             # watches client + server (the default set)
+wat test        # watches only test
+wat test --once # runs test once and exits
 ```
 
 ## CLI
