@@ -52,8 +52,8 @@ FLAGS:
   -h, --help          Show this help text
 
 EXAMPLES:
-  wat                 Watch all groups simultaneously
-  wat build           Watch only the `build` group
-  wat backend tests   Watch both groups simultaneously
+  wat                 Watch default targets (or all watchable targets if no default is set)
+  wat build           Watch only the `build` target
+  wat backend tests   Watch both targets simultaneously
   wat build --once    Run `build` once and exit"
 }

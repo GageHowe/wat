@@ -43,8 +43,11 @@ fn run() -> Result<(), String> {
                 }
             }
             cli.targets.iter().map(String::as_str).collect()
+        } else if !config.default.is_empty() {
+            // A default set is defined: use it.
+            config.default.iter().map(String::as_str).collect()
         } else {
-            // Default: every target that has watch paths (or every target for --once)
+            // No default set: fall back to every watchable target (or all targets for --once).
             config
                 .targets
                 .iter()
