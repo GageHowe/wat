@@ -35,7 +35,6 @@ fn run() -> Result<(), String> {
     loop {
         let config = config::load(&config_path)?;
 
-        // Resolve which targets to activate
         let names: Vec<&str> = if !cli.targets.is_empty() {
             for name in &cli.targets {
                 if !config.targets.contains_key(name.as_str()) {
@@ -44,10 +43,8 @@ fn run() -> Result<(), String> {
             }
             cli.targets.iter().map(String::as_str).collect()
         } else if !config.default.is_empty() {
-            // A default set is defined: use it.
             config.default.iter().map(String::as_str).collect()
         } else {
-            // No default set: fall back to every watchable target (or all targets for --once).
             config
                 .targets
                 .iter()
@@ -63,7 +60,6 @@ fn run() -> Result<(), String> {
             );
         }
 
-        // Run startup commands once before watching
         for &name in &names {
             let target = &config.targets[name];
             if !target.run.is_empty() {
@@ -77,7 +73,6 @@ fn run() -> Result<(), String> {
             return Ok(());
         }
 
-        // Filter to watchable targets only
         let watchable: Vec<&str> = names
             .into_iter()
             .filter(|&n| config.targets[n].is_watchable())
@@ -91,7 +86,6 @@ fn run() -> Result<(), String> {
         let stop = Arc::new(AtomicBool::new(false));
         let config_changed = Arc::new(AtomicBool::new(false));
 
-        // Watch the config file; set flags when it changes.
         {
             let stop = Arc::clone(&stop);
             let config_changed = Arc::clone(&config_changed);
@@ -120,7 +114,6 @@ fn run() -> Result<(), String> {
             });
         }
 
-        // Signal the config poller to exit (in case watchers stopped for another reason).
         stop.store(true, Ordering::Relaxed);
 
         if config_changed.load(Ordering::Relaxed) {

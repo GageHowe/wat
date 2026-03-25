@@ -41,8 +41,6 @@ fn has_glob(s: &str) -> bool {
     s.contains(['*', '?', '['])
 }
 
-/// Returns the non-glob prefix of a glob pattern as a `PathBuf`.
-/// `"src/**/*.rs"` → `"src"`, `"*.rs"` → `"."`.
 fn glob_base(pattern: &str) -> PathBuf {
     let base: PathBuf = pattern
         .split('/')
@@ -130,8 +128,7 @@ pub fn watch(
         }
     }
 
-    // Absolutize glob patterns so they match the absolute paths notify emits.
-    // Plain paths are also added when mixed, so their events aren't dropped.
+    // absolutize glob patterns so they match the absolute paths notify emits
     let event_filter: Option<GlobSet> = if glob_strs.is_empty() {
         None
     } else {
@@ -195,7 +192,7 @@ fn watch_loop(
     rx: mpsc::Receiver<DebounceEventResult>,
     hashes: &mut HashMap<PathBuf, u64>,
     stop: &AtomicBool,
-    mut on_event: impl FnMut(&Triggered),
+    mut on_event: impl FnMut(&Event),
 ) -> Result<(), String> {
     loop {
         if stop.load(Ordering::Relaxed) {
@@ -214,6 +211,7 @@ fn watch_loop(
     }
 }
 
+// we interrupt currently running processes if their flag is set
 fn watch_interrupt(
     name: &str,
     target: &Target,
@@ -244,7 +242,7 @@ fn watch_interrupt(
     Ok(())
 }
 
-fn dispatch(name: &str, target: &Target, triggered: &Triggered) {
+fn dispatch(name: &str, target: &Target, triggered: &Event) {
     if !target.run.is_empty() {
         if let Err(e) = runner::run(&target.run, name) {
             eprintln!("[{name}] {e}");
@@ -253,7 +251,7 @@ fn dispatch(name: &str, target: &Target, triggered: &Triggered) {
     run_specific(name, target, triggered);
 }
 
-fn run_specific(name: &str, target: &Target, triggered: &Triggered) {
+fn run_specific(name: &str, target: &Target, triggered: &Event) {
     let handlers: [(&[String], bool, &str); 4] = [
         (&target.on_change, triggered.change, "onChange"),
         (&target.on_create, triggered.create, "onCreate"),
@@ -269,14 +267,14 @@ fn run_specific(name: &str, target: &Target, triggered: &Triggered) {
     }
 }
 
-struct Triggered {
+struct Event {
     change: bool,
     create: bool,
     delete: bool,
     rename: bool,
 }
 
-impl Triggered {
+impl Event {
     fn label(&self) -> &'static str {
         match (self.change, self.create, self.delete, self.rename) {
             (true, false, false, false) => "modified",
@@ -293,8 +291,8 @@ fn classify(
     ignore: &GlobSet,
     event_filter: Option<&GlobSet>,
     hashes: &mut HashMap<PathBuf, u64>,
-) -> Option<Triggered> {
-    let mut t = Triggered {
+) -> Option<Event> {
+    let mut t = Event {
         change: false,
         create: false,
         delete: false,
@@ -314,8 +312,8 @@ fn classify(
             EventKind::Modify(ModifyKind::Name(_)) => t.rename = true,
             EventKind::Modify(ModifyKind::Data(_) | ModifyKind::Any) => {
                 for path in &event.paths {
-                    // Directories fire modify events when files inside them
-                    // change — skip them, the file itself will have its own event.
+                    // directories fire modify events when files inside them
+                    // change - skip them, the file itself will have its own event.
                     if path.is_dir() {
                         continue;
                     }
