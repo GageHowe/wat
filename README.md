@@ -17,7 +17,7 @@ watch = ["src/**/*.rs"] # only .rs files, recursively
 
 ### top-level options
 * `default`:  Targets to run when none are specified on the command line. If unset, all watchable targets run.
-* `ignore`: Paths to skip. Patterns ending in `/` match directories.
+* `ignore`: Override paths to skip. `/` specifies directories, does not need glob syntax.
 
 ### target-specific options
 * `watch`: Paths or globs to watch. Targets with no `watch` are run-only.
