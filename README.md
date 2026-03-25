@@ -1,11 +1,10 @@
 # wat
 
-`wat` is a tiny Rust CLI for "run this target whenever these files change".
+`wat` is a tiny CLI for "run this target whenever these files change".
 
 It borrows two ideas:
-
-- from `make`: a small config file with named targets
-- from `watchexec`: rerun commands when files change
+- `make`'s small config file with named targets
+- `watchexec`'s ability to rerun commands when files change
 
 ## Example
 
