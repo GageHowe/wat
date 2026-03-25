@@ -14,7 +14,7 @@ Glob syntax is supported:
 ```toml
 watch = ["src/*"]       # files directly in src/
 watch = ["src/**"]      # all files in src/ recursively
-watch = ["src/**/*.rs"] # only .rs files, recursively
+watch = ["src/**/*.c"] # only C files, recursively
 ```
 
 ### top-level options
@@ -38,6 +38,7 @@ default = ["client", "server"]
 
 [client]
 watch = ["client/src/**", "client/Cargo.toml"]
+interrupt = true
 run = ["cargo build -p client"]
 
 [server]
