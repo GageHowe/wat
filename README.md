@@ -68,17 +68,6 @@ wat test        # watches only test
 wat test --once # runs test once and exits
 ```
 
-## CLI
-
-```
-wat [target...] [--once]
-wat --file ./path/to/Watfile [target...] [--once]
-
-  -f, --file <path>   Use a specific config file (default: watfile / watfile.toml)
-      --once          Run target(s) once without watching
-  -h, --help          Show this help text
-```
-
 ## Install
 
 Linux
