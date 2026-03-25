@@ -1,13 +1,16 @@
 # watfile for this project!
 
+default = ["build"]
+
 [build]
 watch = ["src/*", "Cargo.toml", "watfile.toml"]
 interrupt = true
 run = ["cargo build"]
 
+[test]
+watch = ["src/*"]
+run = ["cargo test"]
+
 [buildall]
 interrupt = true
 run = ["cargo build && cargo build --release"]
-
-[test]
-run = ["cargo test"]

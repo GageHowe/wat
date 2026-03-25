@@ -10,6 +10,9 @@ pub const DEFAULT_CONFIG_NAMES: [&str; 2] = ["watfile", "watfile.toml"];
 pub struct Config {
     #[serde(default = "default_ignore")]
     pub ignore: Vec<String>,
+    /// If set, only these targets run when no targets are specified on the command line.
+    #[serde(default)]
+    pub default: Vec<String>,
     #[serde(flatten)]
     pub targets: HashMap<String, Target>,
 }
@@ -84,6 +87,14 @@ fn validate(path: &Path, config: &Config) -> Result<(), String> {
         if !target.has_commands() {
             return Err(format!(
                 "{}: target `{name}` has no commands (`run`, `on_change`, etc.)",
+                path.display()
+            ));
+        }
+    }
+    for name in &config.default {
+        if !config.targets.contains_key(name.as_str()) {
+            return Err(format!(
+                "{}: `default` references undefined target `{name}`",
                 path.display()
             ));
         }
