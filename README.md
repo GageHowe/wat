@@ -1,5 +1,4 @@
-![wat](https://github.com/user-attachments/assets/23d8c9d2-03dd-43a0-b9f7-09c5e824bb5c)
-
+# wat
 
 `wat` is a tiny, cross-platform, language-agnostic, hot-reloading CLI for running commands whenever files change, inspired by `make` and `watchexec`.
 
