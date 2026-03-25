@@ -28,7 +28,7 @@ function Add-BinDirToUserPath {
     return $true
 }
 
-$repo = "howeg/wat"
+$repo = "GageHowe/wat"
 $binDir = Join-Path $HOME ".local\bin"
 $target = Get-TargetTriple
 $archive = "wat-$target.zip"

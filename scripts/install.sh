@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-REPO="howeg/wat"
+REPO="GageHowe/wat"
 BIN_DIR="$HOME/.local/bin"
 PROFILE="$HOME/.profile"
 
