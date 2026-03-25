@@ -1,0 +1,11 @@
+ignore = [".git", "target", "dist"]
+
+[build]
+watch = ["src", "Cargo.toml", "watfile.toml"]
+run = ["cargo build --release"]
+
+# in this case, the two watch targets are equivalent.
+
+[test]
+watch = ["src", "Cargo.toml", "watfile.toml"]
+run = ["cargo test"]
