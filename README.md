@@ -1,6 +1,6 @@
 # wat
 
-`wat` is a tiny, cross-platform, language-agnostic, hot-reloading CLI for running commands whenever files change, inspired by `make` and `watchexec`.
+`wat` is a tiny, cross-platform, language-agnostic, hot-reloading CLI for running commands whenever files change, like a mix between `make` and `watchexec`.
 
 This is intended for my personal use. If you use it, let me know what you think.
 
