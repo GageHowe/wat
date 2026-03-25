@@ -23,7 +23,7 @@ watch = ["src/**/*.rs"] # only .rs files, recursively
 
 ### target-specific options
 * `watch`: Paths or globs to watch. Targets with no `watch` are run-only.
-* `run` | `[]` | Commands run on any event and once at startup.
+* `run`: Commands run on any event and once at startup.
 * `interrupt`: Kill the running process on the next event instead of waiting.
 * `on_change`: Commands run only when file content changes.
 * `on_create`: Commands run only when a file or directory is created.
@@ -35,8 +35,6 @@ watch = ["src/**/*.rs"] # only .rs files, recursively
 ### example
 ```toml
 default = ["client", "server"]
-
-ignore = [".git/", "target/"]
 
 [client]
 watch = ["client/src/**", "client/Cargo.toml"]
