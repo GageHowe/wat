@@ -32,6 +32,16 @@ Run tests:
 cargo test
 ```
 
+## Source structure
+
+| File | Responsibility |
+|------|---------------|
+| `src/main.rs` | Entry point; orchestrates the run loop |
+| `src/cli.rs` | Argument parsing (`lexopt`) |
+| `src/config.rs` | Watfile parsing and validation (`serde` + `toml`) |
+| `src/runner.rs` | Spawning and killing shell processes |
+| `src/watcher.rs` | File watching, event classification, ignore filtering |
+
 ## Project files
 
 - `Watfile` is a sample config for local development
@@ -83,7 +93,10 @@ That workflow builds and uploads:
 - `wat-x86_64-apple-darwin.tar.gz`
 - `wat-x86_64-pc-windows-msvc.zip`
 
-## Notes
+## Guidelines
 
-- The public install scripts are intentionally zero-config and choose the default install location for each operating system.
+- Keep dependencies minimal — each new dep should replace more code than it adds.
+- Errors are `String` throughout; no external error-handling crates.
+- Avoid adding flags or config keys without a clear, immediate use case.
+- The public install scripts are intentionally zero-config and target the default install location for each OS.
 - Windows ARM packaging is not automated yet.

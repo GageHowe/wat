@@ -40,10 +40,6 @@ pub struct Target {
 }
 
 impl Target {
-    pub fn watch_paths(&self) -> Vec<PathBuf> {
-        self.watch.iter().map(PathBuf::from).collect()
-    }
-
     pub fn is_watchable(&self) -> bool {
         !self.watch.is_empty()
     }

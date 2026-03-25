@@ -1,11 +1,9 @@
-ignore = [".git", "target", "dist"]
+# watfile for this project!
 
 [build]
-watch = ["src", "Cargo.toml", "watfile.toml"]
+watch = ["src/*", "Cargo.toml", "watfile.toml"]
+interrupt = true
 run = ["cargo build --release"]
 
-# in this case, the two watch targets are equivalent.
-
 [test]
-watch = ["src", "Cargo.toml", "watfile.toml"]
 run = ["cargo test"]

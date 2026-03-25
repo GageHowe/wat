@@ -47,19 +47,84 @@ pub fn build_ignore_set(patterns: &[String]) -> GlobSet {
     builder.build().unwrap_or_else(|_| GlobSet::empty())
 }
 
+fn has_glob(s: &str) -> bool {
+    s.contains(['*', '?', '['])
+}
+
+/// Returns the non-glob prefix of a glob pattern as a `PathBuf`.
+/// `"src/**/*.rs"` → `"src"`, `"*.rs"` → `"."`.
+fn glob_base(pattern: &str) -> PathBuf {
+    let base: PathBuf = pattern
+        .split('/')
+        .take_while(|seg| !seg.contains(['*', '?', '[']))
+        .collect();
+    if base.as_os_str().is_empty() { PathBuf::from(".") } else { base }
+}
+
 pub fn watch(name: &str, target: &Target, ignore: &GlobSet) -> Result<(), String> {
     let (tx, rx) = mpsc::channel::<DebounceEventResult>();
 
     let mut debouncer = new_debouncer(Duration::from_millis(DEBOUNCE_MS), None, tx)
         .map_err(|e| format!("[{name}] failed to create watcher: {e}"))?;
 
-    for path in target.watch_paths() {
+    let cwd = std::env::current_dir().unwrap_or_default();
+
+    let (glob_strs, plain_strs): (Vec<&String>, Vec<&String>) =
+        target.watch.iter().partition(|p| has_glob(p));
+
+    // Plain paths: watch the surface level only.
+    let mut plain_roots: Vec<PathBuf> = Vec::new();
+    for s in &plain_strs {
+        let path = PathBuf::from(s);
         debouncer
             .watcher()
-            .watch(&path, RecursiveMode::Recursive)
+            .watch(&path, RecursiveMode::NonRecursive)
             .map_err(|e| format!("[{name}] failed to watch `{}`: {e}", path.display()))?;
-        debouncer.cache().add_root(&path, RecursiveMode::Recursive);
+        debouncer.cache().add_root(&path, RecursiveMode::NonRecursive);
+        plain_roots.push(path);
     }
+
+    // Glob paths: watch the base directory recursively; filter events by pattern.
+    let mut glob_bases: Vec<PathBuf> = Vec::new();
+    for s in &glob_strs {
+        let base = glob_base(s);
+        if !glob_bases.contains(&base) {
+            debouncer
+                .watcher()
+                .watch(&base, RecursiveMode::Recursive)
+                .map_err(|e| format!("[{name}] failed to watch `{}`: {e}", base.display()))?;
+            debouncer.cache().add_root(&base, RecursiveMode::Recursive);
+            glob_bases.push(base);
+        }
+    }
+
+    // Build an event filter for glob-watched paths.
+    // Patterns are absolutized so they match the absolute paths notify emits.
+    // When both plain and glob paths are present, plain paths are also added
+    // to the filter so their events are not dropped.
+    let event_filter: Option<GlobSet> = if glob_strs.is_empty() {
+        None // plain+NonRecursive already scopes depth; no filter needed
+    } else {
+        let mut builder = GlobSetBuilder::new();
+        for s in &glob_strs {
+            let abs = format!("{}/{s}", cwd.display());
+            if let Ok(g) = Glob::new(&abs) {
+                builder.add(g);
+            }
+        }
+        for path in &plain_roots {
+            let abs = cwd.join(path);
+            // Accept any file directly inside the plain directory.
+            if let Ok(g) = Glob::new(&format!("{}/*", abs.display())) {
+                builder.add(g);
+            }
+            // Also accept the path itself in case it's a single-file watch.
+            if let Ok(g) = Glob::new(&abs.to_string_lossy()) {
+                builder.add(g);
+            }
+        }
+        builder.build().ok()
+    };
 
     println!(
         "[{name}] watching {} path(s){}",
@@ -69,12 +134,12 @@ pub fn watch(name: &str, target: &Target, ignore: &GlobSet) -> Result<(), String
 
     // Seed the hash cache from disk so the very first save after startup
     // doesn't spuriously trigger if content hasn't changed.
-    let mut hashes = seed_hashes(&target.watch_paths(), ignore);
+    let mut hashes = seed_hashes(&plain_roots, &glob_bases, event_filter.as_ref(), ignore);
 
     if target.interrupt {
-        watch_interrupt(name, target, ignore, rx, &mut hashes)
+        watch_interrupt(name, target, ignore, event_filter.as_ref(), rx, &mut hashes)
     } else {
-        watch_sequential(name, target, ignore, rx, &mut hashes)
+        watch_sequential(name, target, ignore, event_filter.as_ref(), rx, &mut hashes)
     }
 }
 
@@ -84,12 +149,13 @@ fn watch_sequential(
     name: &str,
     target: &Target,
     ignore: &GlobSet,
+    event_filter: Option<&GlobSet>,
     rx: mpsc::Receiver<DebounceEventResult>,
     hashes: &mut HashMap<PathBuf, u64>,
 ) -> Result<(), String> {
     for result in rx {
         let events = unwrap_or_warn(name, result);
-        let Some(triggered) = classify(&events, ignore, hashes) else {
+        let Some(triggered) = classify(&events, ignore, event_filter, hashes) else {
             continue;
         };
         println!("\n[{name}] {}", triggered.label());
@@ -102,6 +168,7 @@ fn watch_interrupt(
     name: &str,
     target: &Target,
     ignore: &GlobSet,
+    event_filter: Option<&GlobSet>,
     rx: mpsc::Receiver<DebounceEventResult>,
     hashes: &mut HashMap<PathBuf, u64>,
 ) -> Result<(), String> {
@@ -109,7 +176,7 @@ fn watch_interrupt(
 
     for result in rx {
         let events = unwrap_or_warn(name, result);
-        let Some(triggered) = classify(&events, ignore, hashes) else {
+        let Some(triggered) = classify(&events, ignore, event_filter, hashes) else {
             continue;
         };
 
@@ -186,6 +253,7 @@ impl Triggered {
 fn classify(
     events: &[DebouncedEvent],
     ignore: &GlobSet,
+    event_filter: Option<&GlobSet>,
     hashes: &mut HashMap<PathBuf, u64>,
 ) -> Option<Triggered> {
     let mut t = Triggered { change: false, create: false, delete: false, rename: false };
@@ -193,6 +261,11 @@ fn classify(
     for event in events {
         if !event.paths.is_empty() && event.paths.iter().all(|p| ignore.is_match(p)) {
             continue;
+        }
+        if let Some(filter) = event_filter {
+            if !event.paths.iter().any(|p| filter.is_match(p)) {
+                continue;
+            }
         }
         match &event.kind {
             EventKind::Modify(ModifyKind::Name(_)) => t.rename = true,
@@ -224,24 +297,53 @@ fn classify(
 
 // ── Content hashing ──────────────────────────────────────────────────────────
 
-/// Walk watched paths at startup and hash every file so the first save
-/// after launch doesn't fire if nothing actually changed.
-fn seed_hashes(watch_paths: &[PathBuf], ignore: &GlobSet) -> HashMap<PathBuf, u64> {
+/// Walk watched paths at startup and hash every relevant file so the first
+/// save after launch doesn't fire if nothing actually changed.
+fn seed_hashes(
+    plain_roots: &[PathBuf],
+    glob_bases: &[PathBuf],
+    event_filter: Option<&GlobSet>,
+    ignore: &GlobSet,
+) -> HashMap<PathBuf, u64> {
     let mut hashes = HashMap::new();
-    for root in watch_paths {
+
+    // Plain paths: surface-level only, matching the NonRecursive watch.
+    for root in plain_roots {
+        for entry in WalkDir::new(root)
+            .max_depth(1)
+            .into_iter()
+            .filter_entry(|e| !ignore.is_match(e.path()))
+            .flatten()
+        {
+            if entry.file_type().is_file() {
+                if let Ok(path) = entry.path().canonicalize() {
+                    if let Some(hash) = hash_file(&path) {
+                        hashes.insert(path, hash);
+                    }
+                }
+            }
+        }
+    }
+
+    // Glob paths: recursive under the base, filtered by the event filter.
+    for root in glob_bases {
         for entry in WalkDir::new(root)
             .into_iter()
             .filter_entry(|e| !ignore.is_match(e.path()))
             .flatten()
         {
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(hash) = hash_file(path) {
-                    hashes.insert(path.to_path_buf(), hash);
+            if entry.file_type().is_file() {
+                if let Ok(path) = entry.path().canonicalize() {
+                    if event_filter.map_or(true, |f| f.is_match(&path)) {
+                        if let Some(hash) = hash_file(&path) {
+                            hashes.insert(path, hash);
+                        }
+                    }
                 }
             }
         }
     }
+
     hashes
 }
 
