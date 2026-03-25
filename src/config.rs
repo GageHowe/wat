@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-pub const DEFAULT_CONFIG_NAMES: [&str; 3] = ["Watfile", "watfile", "Watfile.toml"];
+pub const DEFAULT_CONFIG_NAMES: [&str; 2] = ["watfile", "watfile.toml"];
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -70,8 +70,8 @@ pub fn find_config() -> Result<PathBuf, String> {
 pub fn load(path: &Path) -> Result<Config, String> {
     let contents = fs::read_to_string(path)
         .map_err(|e| format!("failed to read `{}`: {e}", path.display()))?;
-    let config: Config = toml::from_str(&contents)
-        .map_err(|e| format!("{}: {e}", path.display()))?;
+    let config: Config =
+        toml::from_str(&contents).map_err(|e| format!("{}: {e}", path.display()))?;
     validate(path, &config)?;
     Ok(config)
 }

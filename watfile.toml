@@ -3,7 +3,11 @@
 [build]
 watch = ["src/*", "Cargo.toml", "watfile.toml"]
 interrupt = true
-run = ["cargo build --release"]
+run = ["cargo build"]
+
+[buildall]
+interrupt = true
+run = ["cargo build && cargo build --release"]
 
 [test]
 run = ["cargo test"]
