@@ -67,7 +67,7 @@ pub fn find_config() -> Result<PathBuf, String> {
             return Ok(path);
         }
     }
-    Err("no config file found; tried: Watfile, watfile, Watfile.toml".to_string())
+    Err("no watfile found".to_string())
 }
 
 pub fn load(path: &Path) -> Result<Config, String> {
