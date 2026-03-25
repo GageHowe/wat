@@ -2,7 +2,7 @@
 
 `wat` is a tiny, cross-platform, language-agnostic, hot-reloading CLI for running commands whenever files change, inspired by `make` and `watchexec`.
 
-The config file is TOML named `watfile` or `watfile.toml`. Each target is a named section:
+The config file is TOML, `watfile` or `watfile.toml`. Each target is a named section:
 ```toml
 [name]
 watch = ["path1", "path2"]  # directories or files
