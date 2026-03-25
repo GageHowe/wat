@@ -1,0 +1,8 @@
+watch: src Cargo.toml Watfile
+default: test
+
+test:
+  cargo test
+
+run:
+  cargo run -- --help
