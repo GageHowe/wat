@@ -1,6 +1,6 @@
 # wat
 
-`wat` is a tiny CLI for "run this target whenever these files change".
+`wat` is a tiny, cross-platform, language-agnostic CLI for running commands whenever files change.
 
 It borrows two ideas:
 - `make`'s small config file with named targets
@@ -35,69 +35,14 @@ wat run
 
 ## Install
 
-Unix-like shells:
-
+MacOS/Linux
 ```bash
 curl -fsSL https://raw.githubusercontent.com/howeg/wat/main/scripts/install.sh | sh
 ```
 
-PowerShell:
-
+Windows
 ```powershell
 irm https://raw.githubusercontent.com/howeg/wat/main/scripts/install.ps1 | iex
-```
-
-Both installers support:
-
-- `WAT_INSTALL_REPO` to point at a fork or alternate GitHub repo
-- `WAT_INSTALL_VERSION` to install a specific tag instead of the latest release
-- `WAT_INSTALL_BIN` to choose the destination directory
-- `WAT_INSTALL_SET_PATH=0` to skip shell profile updates on Unix
-
-The PowerShell installer also supports `-NoPathUpdate` if you only want a session-local PATH change.
-
-What the scripts do:
-
-- detect the current OS and CPU architecture
-- download the matching GitHub Release artifact for `wat`
-- extract the binary into your chosen install directory
-- add that directory to PATH when possible
-
-## Release Packaging
-
-Build the archives expected by the install scripts:
-
-```bash
-scripts/package-release.sh x86_64-unknown-linux-musl
-scripts/package-release.sh aarch64-apple-darwin
-```
-
-```powershell
-.\scripts\package-release.ps1 -Target x86_64-pc-windows-msvc
-```
-
-The expected release asset names are:
-
-- `wat-x86_64-unknown-linux-musl.tar.gz`
-- `wat-aarch64-apple-darwin.tar.gz`
-- `wat-x86_64-apple-darwin.tar.gz`
-- `wat-x86_64-pc-windows-msvc.zip`
-- `wat-aarch64-pc-windows-msvc.zip`
-
-Automatic GitHub Releases are configured in [`.github/workflows/release.yml`](C:\Users\howeg\Documents\Github\wat\.github\workflows\release.yml). Pushing a tag like `v0.1.0` will build and publish:
-
-- `wat-x86_64-unknown-linux-musl.tar.gz`
-- `wat-aarch64-apple-darwin.tar.gz`
-- `wat-x86_64-apple-darwin.tar.gz`
-- `wat-x86_64-pc-windows-msvc.zip`
-
-Windows ARM release packaging is not automated yet, so `wat-aarch64-pc-windows-msvc.zip` would still need to be built and uploaded separately if you want the PowerShell installer to support that target.
-
-Example:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
 ```
 
 ## Config format
