@@ -40,8 +40,6 @@ Each target supports:
 * `run`: commands to execute on startup and on changes
 * `interrupt`: kill the child process immediately when changes arrive. You'd want this for long-running processes, and I'm considering making this the default behavior.
 
-Targets without `watch` are run-only. They can be used for setup tasks like `init`.
-
 `run` supports multiple commands. They are chained in the shell with `&&`, so `run = ["cargo fmt --check", "cargo build", "cargo test"]` behaves like `cargo fmt --check && cargo build && cargo test`
 
 If you want two long-running processes, use two targets and run them together instead of putting both in one `run` list.
