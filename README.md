@@ -1,6 +1,6 @@
 # wat
 
-`wat` is a tiny cross-platform, language-agnostic CLI for rerunning commands when files change.
+`wat` is a tiny cross-platform, language-agnostic CLI for watching file changes and executing commands.
 
 This tool is for my own personal use and may have breaking changes each minor version. If you use it, let me know how it goes!
 
