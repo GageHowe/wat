@@ -4,28 +4,34 @@ pub fn run(commands: &[String], label: &str) -> Result<(), String> {
     println!("\n==> {label}");
     for cmd in commands {
         println!("$ {cmd}");
-        let status = shell(cmd)
-            .status()
-            .map_err(|e| format!("failed to spawn `{cmd}`: {e}"))?;
-        if !status.success() {
-            return Err(format!("`{cmd}` exited with {status}"));
-        }
     }
-    Ok(())
+    let mut child = spawn_shell(commands)?;
+    let status = child.wait().map_err(|e| format!("failed to wait: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("command exited with {status}"))
+    }
 }
 
-pub fn spawn(commands: &[String], label: &str) -> Result<Child, String> {
-    let joined = commands.join(" && ");
+pub fn start(commands: &[String], label: &str) -> Result<Child, String> {
     println!("\n==> {label}");
-    println!("$ {joined}");
-    shell(&joined)
-        .spawn()
-        .map_err(|e| format!("failed to spawn `{joined}`: {e}"))
+    for cmd in commands {
+        println!("$ {cmd}");
+    }
+    spawn_shell(commands)
 }
 
 pub fn kill(child: &mut Child) {
     child.kill().ok();
     child.wait().ok();
+}
+
+fn spawn_shell(commands: &[String]) -> Result<Child, String> {
+    let joined = commands.join(" && ");
+    shell(&joined)
+        .spawn()
+        .map_err(|e| format!("failed to spawn `{joined}`: {e}"))
 }
 
 #[cfg(windows)]

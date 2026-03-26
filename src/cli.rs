@@ -3,17 +3,11 @@ use std::path::PathBuf;
 #[derive(Debug)]
 pub struct Cli {
     pub config_path: Option<PathBuf>,
-    /// Explicit target names from the command line (empty = watch all)
     pub targets: Vec<String>,
     pub once: bool,
 }
 
-pub enum Outcome {
-    Run(Cli),
-    Help,
-}
-
-pub fn parse() -> Result<Outcome, String> {
+pub fn parse() -> Result<Option<Cli>, String> {
     use lexopt::prelude::*;
 
     let mut cli = Cli {
@@ -25,7 +19,7 @@ pub fn parse() -> Result<Outcome, String> {
 
     while let Some(arg) = parser.next().map_err(|e| e.to_string())? {
         match arg {
-            Short('h') | Long("help") => return Ok(Outcome::Help),
+            Short('h') | Long("help") => return Ok(None),
             Short('f') | Long("file") => {
                 cli.config_path = Some(PathBuf::from(parser.value().map_err(|e| e.to_string())?));
             }
@@ -36,7 +30,7 @@ pub fn parse() -> Result<Outcome, String> {
         }
     }
 
-    Ok(Outcome::Run(cli))
+    Ok(Some(cli))
 }
 
 pub fn help_text() -> &'static str {
@@ -44,7 +38,7 @@ pub fn help_text() -> &'static str {
 
 USAGE:
   wat [target...] [--once]
-  wat --file ./Watfile [target...] [--once]
+  wat --file ./watfile.toml [target...] [--once]
 
 FLAGS:
   -f, --file <path>   Use a specific config file
@@ -52,8 +46,8 @@ FLAGS:
   -h, --help          Show this help text
 
 EXAMPLES:
-  wat                 Watch default targets (or all watchable targets if no default is set)
-  wat build           Watch only the `build` target
-  wat backend tests   Watch both targets simultaneously
-  wat build --once    Run `build` once and exit"
+  wat
+  wat build
+  wat backend tests
+  wat build --once"
 }
