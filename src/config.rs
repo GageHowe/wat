@@ -10,7 +10,6 @@ pub const DEFAULT_CONFIG_NAMES: [&str; 2] = ["watfile", "watfile.toml"];
 pub struct Config {
     #[serde(default = "default_ignore")]
     pub ignore: Vec<String>,
-    /// If set, only these targets run when no targets are specified on the command line.
     #[serde(default)]
     pub default: Vec<String>,
     #[serde(flatten)]
@@ -19,40 +18,17 @@ pub struct Config {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Target {
-    /// Paths/directories to watch (recursive).
     #[serde(default)]
     pub watch: Vec<String>,
-    /// Interrupt (kill) the running process on the next event instead of waiting.
     #[serde(default)]
     pub interrupt: bool,
-    /// Commands run on any event (and once on startup).
     #[serde(default)]
     pub run: Vec<String>,
-    /// Commands run only on file content changes.
-    #[serde(default)]
-    pub on_change: Vec<String>,
-    /// Commands run only on new files/directories.
-    #[serde(default)]
-    pub on_create: Vec<String>,
-    /// Commands run only on deletions.
-    #[serde(default)]
-    pub on_delete: Vec<String>,
-    /// Commands run only on renames/moves.
-    #[serde(default)]
-    pub on_rename: Vec<String>,
 }
 
 impl Target {
     pub fn is_watchable(&self) -> bool {
         !self.watch.is_empty()
-    }
-
-    pub fn has_commands(&self) -> bool {
-        !self.run.is_empty()
-            || !self.on_change.is_empty()
-            || !self.on_create.is_empty()
-            || !self.on_delete.is_empty()
-            || !self.on_rename.is_empty()
     }
 }
 
@@ -84,11 +60,8 @@ fn validate(path: &Path, config: &Config) -> Result<(), String> {
         return Err(format!("{}: no targets defined", path.display()));
     }
     for (name, target) in &config.targets {
-        if !target.has_commands() {
-            return Err(format!(
-                "{}: target `{name}` has no commands (`run`, `on_change`, etc.)",
-                path.display()
-            ));
+        if target.run.is_empty() {
+            return Err(format!("{}: target `{name}` has no commands", path.display()));
         }
     }
     for name in &config.default {

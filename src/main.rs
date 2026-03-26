@@ -4,8 +4,6 @@ mod runner;
 mod watcher;
 
 use std::process::ExitCode;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 fn main() -> ExitCode {
     match run() {
@@ -18,12 +16,9 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), String> {
-    let cli = match cli::parse()? {
-        cli::Outcome::Help => {
-            println!("{}", cli::help_text());
-            return Ok(());
-        }
-        cli::Outcome::Run(c) => c,
+    let Some(cli) = cli::parse()? else {
+        println!("{}", cli::help_text());
+        return Ok(());
     };
 
     let config_path = cli
@@ -31,96 +26,64 @@ fn run() -> Result<(), String> {
         .clone()
         .map(Ok)
         .unwrap_or_else(config::find_config)?;
+    let config = config::load(&config_path)?;
+    let names = select_targets(&cli, &config)?;
 
-    loop {
-        let config = config::load(&config_path)?;
+    if names.is_empty() {
+        return Err("no watchable targets found".to_string());
+    }
 
-        let names: Vec<&str> = if !cli.targets.is_empty() {
-            for name in &cli.targets {
-                if !config.targets.contains_key(name.as_str()) {
-                    return Err(format!("target `{name}` is not defined"));
-                }
+    let mut selected = Vec::with_capacity(names.len());
+    for name in names {
+        selected.push((name, &config.targets[name]));
+    }
+
+    run_startup(&selected, cli.once);
+
+    if cli.once {
+        return Ok(());
+    }
+
+    let watchable: Vec<_> = selected
+        .into_iter()
+        .filter(|(_, target)| target.is_watchable())
+        .collect();
+    if watchable.is_empty() {
+        return Ok(());
+    }
+
+    watcher::watch(&watchable, &config.ignore)
+}
+
+fn select_targets<'a>(cli: &'a cli::Cli, config: &'a config::Config) -> Result<Vec<&'a str>, String> {
+    if !cli.targets.is_empty() {
+        for name in &cli.targets {
+            if !config.targets.contains_key(name.as_str()) {
+                return Err(format!("target `{name}` is not defined"));
             }
-            cli.targets.iter().map(String::as_str).collect()
-        } else if !config.default.is_empty() {
-            config.default.iter().map(String::as_str).collect()
-        } else {
-            config
-                .targets
-                .iter()
-                .filter(|(_, t)| cli.once || t.is_watchable())
-                .map(|(n, _)| n.as_str())
-                .collect()
-        };
-
-        if names.is_empty() {
-            return Err(
-                "no watchable targets found — add `watch = [...]` to at least one target"
-                    .to_string(),
-            );
         }
+        return Ok(cli.targets.iter().map(String::as_str).collect());
+    }
 
-        for &name in &names {
-            let target = &config.targets[name];
-            if !target.run.is_empty() {
-                if let Err(e) = runner::run(&target.run, name) {
-                    eprintln!("{e}");
-                }
-            }
-        }
+    if !config.default.is_empty() {
+        return Ok(config.default.iter().map(String::as_str).collect());
+    }
 
-        if cli.once {
-            return Ok(());
-        }
+    Ok(config
+        .targets
+        .iter()
+        .filter(|(_, target)| cli.once || target.is_watchable())
+        .map(|(name, _)| name.as_str())
+        .collect())
+}
 
-        let watchable: Vec<&str> = names
-            .into_iter()
-            .filter(|&n| config.targets[n].is_watchable())
-            .collect();
-
-        if watchable.is_empty() {
-            return Ok(());
-        }
-
-        let ignore = watcher::build_ignore_set(&config.ignore);
-        let stop = Arc::new(AtomicBool::new(false));
-        let config_changed = Arc::new(AtomicBool::new(false));
-
-        {
-            let stop = Arc::clone(&stop);
-            let config_changed = Arc::clone(&config_changed);
-            let path = config_path.clone();
-            std::thread::spawn(move || {
-                watcher::watch_config(&path, &stop, &config_changed);
-            });
-        }
-
-        if watchable.len() == 1 {
-            let name = watchable[0];
-            watcher::watch(name, &config.targets[name], &ignore, Arc::clone(&stop))?;
-        } else {
-            std::thread::scope(|s| {
-                for &name in &watchable {
-                    let target = &config.targets[name];
-                    s.spawn({
-                        let stop = Arc::clone(&stop);
-                        || {
-                            if let Err(e) = watcher::watch(name, target, &ignore, stop) {
-                                eprintln!("{e}");
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        stop.store(true, Ordering::Relaxed);
-
-        if config_changed.load(Ordering::Relaxed) {
-            eprintln!("[wat] config changed, reloading...");
+fn run_startup(selected: &[(&str, &config::Target)], once: bool) {
+    for &(name, target) in selected {
+        if target.run.is_empty() || (target.interrupt && !once) {
             continue;
         }
-
-        return Ok(());
+        if let Err(e) = runner::run(&target.run, name) {
+            eprintln!("[{name}] {e}");
+        }
     }
 }
