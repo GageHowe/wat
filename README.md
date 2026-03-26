@@ -2,6 +2,8 @@
 
 `wat` is a tiny cross-platform, language-agnostic CLI for rerunning commands when files change.
 
+This tool is for my own personal use and may have breaking changes each version. If you use it, let me know how it goes!
+
 The config file is a TOML file named `watfile` or `watfile.toml`. Example:
 ```toml
 default = ["backend", "frontend"]
