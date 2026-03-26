@@ -16,9 +16,16 @@ fn main() -> ExitCode {
 }
 
 fn run() -> Result<(), String> {
-    let Some(cli) = cli::parse()? else {
-        println!("{}", cli::help_text());
-        return Ok(());
+    let cli = match cli::parse()? {
+        cli::ParseResult::Run(cli) => cli,
+        cli::ParseResult::Help => {
+            println!("{}", cli::help_text());
+            return Ok(());
+        }
+        cli::ParseResult::Version => {
+            println!("{}", cli::version_text());
+            return Ok(());
+        }
     };
 
     let config_path = cli

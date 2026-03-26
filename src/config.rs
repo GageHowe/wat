@@ -25,7 +25,6 @@ pub struct Target {
     #[serde(default)]
     pub run: Vec<String>,
 }
-
 impl Target {
     pub fn is_watchable(&self) -> bool {
         !self.watch.is_empty()
@@ -33,7 +32,7 @@ impl Target {
 }
 
 fn default_ignore() -> Vec<String> {
-    vec![".git/".to_string()]
+    vec![".git/".to_string()] // thought this was a sane default, but might make it empty
 }
 
 pub fn find_config() -> Result<PathBuf, String> {
@@ -61,7 +60,10 @@ fn validate(path: &Path, config: &Config) -> Result<(), String> {
     }
     for (name, target) in &config.targets {
         if target.run.is_empty() {
-            return Err(format!("{}: target `{name}` has no commands", path.display()));
+            return Err(format!(
+                "{}: target `{name}` has no run commands",
+                path.display()
+            ));
         }
     }
     for name in &config.default {

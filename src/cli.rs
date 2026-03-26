@@ -7,7 +7,13 @@ pub struct Cli {
     pub once: bool,
 }
 
-pub fn parse() -> Result<Option<Cli>, String> {
+pub enum ParseResult {
+    Run(Cli),
+    Help,
+    Version,
+}
+
+pub fn parse() -> Result<ParseResult, String> {
     use lexopt::prelude::*;
 
     let mut cli = Cli {
@@ -19,7 +25,8 @@ pub fn parse() -> Result<Option<Cli>, String> {
 
     while let Some(arg) = parser.next().map_err(|e| e.to_string())? {
         match arg {
-            Short('h') | Long("help") => return Ok(None),
+            Short('h') | Long("help") => return Ok(ParseResult::Help),
+            Short('v') | Long("version") => return Ok(ParseResult::Version),
             Short('f') | Long("file") => {
                 cli.config_path = Some(PathBuf::from(parser.value().map_err(|e| e.to_string())?));
             }
@@ -30,7 +37,7 @@ pub fn parse() -> Result<Option<Cli>, String> {
         }
     }
 
-    Ok(Some(cli))
+    Ok(ParseResult::Run(cli))
 }
 
 pub fn help_text() -> &'static str {
@@ -42,6 +49,7 @@ USAGE:
 
 FLAGS:
   -f, --file <path>   Use a specific config file
+  -v, --version       Show the version
       --once          Run target(s) once without watching
   -h, --help          Show this help text
 
@@ -50,4 +58,8 @@ EXAMPLES:
   wat build
   wat backend tests
   wat build --once"
+}
+
+pub fn version_text() -> &'static str {
+    concat!("wat ", env!("CARGO_PKG_VERSION"))
 }
