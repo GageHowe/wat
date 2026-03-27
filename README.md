@@ -45,3 +45,17 @@ Each target supports:
 If you want two long-running processes, use two targets and run them together instead of putting both in one `run` list.
 
 When chaining commands across sibling directories, prefer commands that do not depend on the previous working directory, such as `npm --prefix ...` or `cargo --manifest-path ...`. Or if you need to use `cd`, handle it explicitly. Though this isn't very clean and I'm thinking about how to handle cases like this better.
+
+## install
+linux
+```bash
+curl TODO | sh
+```
+MacOS
+```sh
+curl TODO | sh
+```
+Windows
+```powershell
+wget TODO | iex
+```
