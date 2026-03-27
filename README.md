@@ -47,15 +47,15 @@ If you want two long-running processes, use two targets and run them together in
 When chaining commands across sibling directories, prefer commands that do not depend on the previous working directory, such as `npm --prefix ...` or `cargo --manifest-path ...`. Or if you need to use `cd`, handle it explicitly. Though this isn't very clean and I'm thinking about how to handle cases like this better.
 
 ## install
-linux
+Linux
 ```bash
-curl TODO | sh
+curl -fsSL https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.sh | sh
 ```
 MacOS
-```sh
-curl TODO | sh
+```bash
+curl -fsSL https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install-macos.sh | sh
 ```
 Windows
 ```powershell
-wget TODO | iex
+irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | iex
 ```
