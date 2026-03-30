@@ -1,10 +1,10 @@
 [package]
 name = "wat"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2024"
 
 [dependencies]
-notify-debouncer-mini = "0.6"
+notify = "8"
 serde = { version = "1", features = ["derive"] }
 toml = "0.8"
 globset = "0.4"

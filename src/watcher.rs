@@ -2,13 +2,10 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Child;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
-use notify_debouncer_mini::{
-    DebounceEventResult, DebouncedEvent, new_debouncer,
-    notify::RecursiveMode,
-};
+use notify::{EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::config::Target;
 use crate::runner;
@@ -25,9 +22,14 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
     let cwd = std::env::current_dir().map_err(|e| format!("failed to read cwd: {e}"))?;
     let compiled = compile_targets(targets, &cwd)?;
     let ignore = build_ignore_set(ignore);
-    let (tx, rx) = mpsc::channel::<DebounceEventResult>();
-    let mut debouncer = new_debouncer(Duration::from_millis(DEBOUNCE_MS), tx)
-        .map_err(|e| format!("failed to create watcher: {e}"))?;
+    let (tx, rx) = mpsc::channel::<notify::Result<notify::Event>>();
+    let mut watcher = RecommendedWatcher::new(
+        move |res| {
+            let _ = tx.send(res);
+        },
+        notify::Config::default(),
+    )
+    .map_err(|e| format!("failed to create watcher: {e}"))?;
 
     for root in watch_roots(targets) {
         let mode = if root.is_file() {
@@ -35,8 +37,7 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
         } else {
             RecursiveMode::Recursive
         };
-        debouncer
-            .watcher()
+        watcher
             .watch(&root, mode)
             .map_err(|e| format!("failed to watch `{}`: {e}", root.display()))?;
     }
@@ -65,26 +66,45 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
             }
         })
         .collect();
+
     loop {
-        match rx.recv() {
-            Ok(Ok(events)) => {
-                let matched = match_targets(&compiled, &ignore, &events);
-                for index in matched {
-                    trigger(&compiled[index], &mut running[index]);
+        // Wait for the first non-access event
+        let first = loop {
+            match rx.recv() {
+                Ok(Ok(e)) => {
+                    if !matches!(e.kind, EventKind::Access(_)) {
+                        break e;
+                    }
                 }
+                Ok(Err(e)) => eprintln!("[wat] watch error: {e}"),
+                Err(_) => return Ok(()),
             }
-            Ok(Err(error)) => eprintln!("[wat] watch error: {error}"),
-            Err(_) => break,
+        };
+
+        // Collect all events over the debounce window, filtering access events
+        let deadline = Instant::now() + Duration::from_millis(DEBOUNCE_MS);
+        let mut paths: HashSet<PathBuf> = HashSet::from_iter(first.paths);
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                break;
+            }
+            match rx.recv_timeout(remaining) {
+                Ok(Ok(e)) => {
+                    if !matches!(e.kind, EventKind::Access(_)) {
+                        paths.extend(e.paths);
+                    }
+                }
+                Ok(Err(e)) => eprintln!("[wat] watch error: {e}"),
+                Err(_) => break,
+            }
+        }
+
+        let matched = match_targets(&compiled, &ignore, &paths);
+        for index in matched {
+            trigger(&compiled[index], &mut running[index]);
         }
     }
-
-    for child in &mut running {
-        if let Some(child) = child {
-            runner::kill(child);
-        }
-    }
-
-    Ok(())
 }
 
 fn trigger(target: &CompiledTarget<'_>, child: &mut Option<Child>) {
@@ -111,15 +131,15 @@ fn trigger(target: &CompiledTarget<'_>, child: &mut Option<Child>) {
 fn match_targets(
     targets: &[CompiledTarget<'_>],
     ignore: &GlobSet,
-    events: &[DebouncedEvent],
+    paths: &HashSet<PathBuf>,
 ) -> Vec<usize> {
     let mut matched = HashSet::new();
-    for event in events {
-        if ignore.is_match(&event.path) {
+    for path in paths {
+        if ignore.is_match(path) {
             continue;
         }
         for (index, target) in targets.iter().enumerate() {
-            if target.filter.is_match(&event.path) {
+            if target.filter.is_match(path) {
                 matched.insert(index);
             }
         }
