@@ -47,6 +47,7 @@ If you want two long-running processes, use two targets and run them together in
 When chaining commands across sibling directories, prefer commands that do not depend on the previous working directory, such as `npm --prefix ...` or `cargo --manifest-path ...`. Or if you need to use `cd`, handle it explicitly. Though this isn't very clean and I'm thinking about how to handle cases like this better.
 
 ## install
+
 Linux
 ```bash
 curl -fsSL https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.sh | sh
@@ -59,3 +60,5 @@ Windows
 ```powershell
 irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | iex
 ```
+
+`wat update` automatically grabs these links and updates itself, and `wat -v` shows the current version
