@@ -24,6 +24,7 @@ pub fn parse() -> Result<ParseResult, String> {
     };
     let mut parser = lexopt::Parser::from_env();
 
+    // lexopt is insanely nice
     while let Some(arg) = parser.next().map_err(|e| e.to_string())? {
         match arg {
             Short('h') | Long("help") => return Ok(ParseResult::Help),
@@ -47,6 +48,7 @@ pub fn parse() -> Result<ParseResult, String> {
     Ok(ParseResult::Run(cli))
 }
 
+#[inline]
 pub fn help_text() -> &'static str {
     "wat - a tiny config-driven file watcher
 
