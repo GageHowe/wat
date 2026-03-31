@@ -11,6 +11,7 @@ pub enum ParseResult {
     Run(Cli),
     Help,
     Version,
+    Update,
 }
 
 pub fn parse() -> Result<ParseResult, String> {
@@ -33,7 +34,13 @@ pub fn parse() -> Result<ParseResult, String> {
             Long("once") => cli.once = true,
             Short(c) => return Err(format!("unknown flag `-{c}`")),
             Long(s) => return Err(format!("unknown flag `--{s}`")),
-            Value(v) => cli.targets.push(v.to_string_lossy().into_owned()),
+            Value(v) => {
+                let s = v.to_string_lossy().into_owned();
+                if s == "update" && cli.targets.is_empty() {
+                    return Ok(ParseResult::Update);
+                }
+                cli.targets.push(s);
+            }
         }
     }
 
@@ -52,6 +59,9 @@ FLAGS:
   -v, --version       Show the version
       --once          Run target(s) once without watching
   -h, --help          Show this help text
+
+SUBCOMMANDS:
+  update              Update wat to the latest version
 
 EXAMPLES:
   wat

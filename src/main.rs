@@ -26,6 +26,9 @@ fn run() -> Result<(), String> {
             println!("{}", cli::version_text());
             return Ok(());
         }
+        cli::ParseResult::Update => {
+            return update();
+        }
     };
 
     let config_path = cli
@@ -60,6 +63,40 @@ fn run() -> Result<(), String> {
     }
 
     watcher::watch(&watchable, &config.ignore)
+}
+
+fn update() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let status = std::process::Command::new("powershell")
+            .args(["-Command", "irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | iex"])
+            .status()
+            .map_err(|e| format!("failed to run update: {e}"))?;
+        if !status.success() {
+            return Err("update failed".to_string());
+        }
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let status = std::process::Command::new("sh")
+            .args(["-c", "curl -fsSL https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install-macos.sh | sh"])
+            .status()
+            .map_err(|e| format!("failed to run update: {e}"))?;
+        if !status.success() {
+            return Err("update failed".to_string());
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    {
+        let status = std::process::Command::new("sh")
+            .args(["-c", "curl -fsSL https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.sh | sh"])
+            .status()
+            .map_err(|e| format!("failed to run update: {e}"))?;
+        if !status.success() {
+            return Err("update failed".to_string());
+        }
+    }
+    Ok(())
 }
 
 fn select_targets<'a>(cli: &'a cli::Cli, config: &'a config::Config) -> Result<Vec<&'a str>, String> {
