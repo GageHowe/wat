@@ -67,17 +67,30 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
         })
         .collect();
 
-    loop {
+    'outer: loop {
+        // Check interrupt children for unexpected exits
+        for (i, child_opt) in running.iter_mut().enumerate() {
+            if let Some(child) = child_opt {
+                if let Ok(Some(status)) = child.try_wait() {
+                    if !status.success() {
+                        eprintln!("[{}] command exited with {status}", compiled[i].name);
+                    }
+                    *child_opt = None;
+                }
+            }
+        }
+
         // Wait for the first non-access event
         let first = loop {
-            match rx.recv() {
+            match rx.recv_timeout(Duration::from_millis(250)) {
                 Ok(Ok(e)) => {
                     if !matches!(e.kind, EventKind::Access(_)) {
                         break e;
                     }
                 }
                 Ok(Err(e)) => eprintln!("[wat] watch error: {e}"),
-                Err(_) => return Ok(()),
+                Err(mpsc::RecvTimeoutError::Disconnected) => return Ok(()),
+                Err(mpsc::RecvTimeoutError::Timeout) => continue 'outer,
             }
         };
 
