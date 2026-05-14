@@ -47,7 +47,11 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
             "[{}] watching {} path(s){}",
             target.name,
             target.target.watch.len(),
-            if target.target.interrupt { " (interrupt)" } else { "" }
+            if target.target.interrupt {
+                " (interrupt)"
+            } else {
+                ""
+            }
         );
     }
 
@@ -70,13 +74,13 @@ pub fn watch(targets: &[(&str, &Target)], ignore: &[String]) -> Result<(), Strin
     'outer: loop {
         // Check interrupt children for unexpected exits
         for (i, child_opt) in running.iter_mut().enumerate() {
-            if let Some(child) = child_opt {
-                if let Ok(Some(status)) = child.try_wait() {
-                    if !status.success() {
-                        eprintln!("[{}] command exited with {status}", compiled[i].name);
-                    }
-                    *child_opt = None;
+            if let Some(child) = child_opt
+                && let Ok(Some(status)) = child.try_wait()
+            {
+                if !status.success() {
+                    eprintln!("[{}] command exited with {status}", compiled[i].name);
                 }
+                *child_opt = None;
             }
         }
 
@@ -170,7 +174,11 @@ fn compile_targets<'a>(
         .iter()
         .map(|&(name, target)| {
             let filter = build_watch_set(&target.watch, cwd)?;
-            Ok(CompiledTarget { name, target, filter })
+            Ok(CompiledTarget {
+                name,
+                target,
+                filter,
+            })
         })
         .collect()
 }
@@ -213,12 +221,14 @@ fn build_watch_set(patterns: &[String], cwd: &Path) -> Result<GlobSet, String> {
     let mut builder = GlobSetBuilder::new();
     for pattern in patterns {
         for glob in expand_watch_pattern(pattern, cwd) {
-            let parsed = Glob::new(&glob)
-                .map_err(|e| format!("invalid watch pattern `{pattern}`: {e}"))?;
+            let parsed =
+                Glob::new(&glob).map_err(|e| format!("invalid watch pattern `{pattern}`: {e}"))?;
             builder.add(parsed);
         }
     }
-    builder.build().map_err(|e| format!("invalid watch set: {e}"))
+    builder
+        .build()
+        .map_err(|e| format!("invalid watch set: {e}"))
 }
 
 fn build_ignore_set(patterns: &[String]) -> GlobSet {

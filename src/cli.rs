@@ -11,7 +11,6 @@ pub enum ParseResult {
     Run(Cli),
     Help,
     Version,
-    Update,
 }
 
 pub fn parse() -> Result<ParseResult, String> {
@@ -36,11 +35,7 @@ pub fn parse() -> Result<ParseResult, String> {
             Short(c) => return Err(format!("unknown flag `-{c}`")),
             Long(s) => return Err(format!("unknown flag `--{s}`")),
             Value(v) => {
-                let s = v.to_string_lossy().into_owned();
-                if s == "update" && cli.targets.is_empty() {
-                    return Ok(ParseResult::Update);
-                }
-                cli.targets.push(s);
+                cli.targets.push(v.to_string_lossy().into_owned());
             }
         }
     }
@@ -63,7 +58,7 @@ FLAGS:
   -h, --help          Show this help text
 
 SUBCOMMANDS:
-  update              Update wat to the latest version
+  update              Update wat to the latest version when no target named `update` exists
 
 EXAMPLES:
   wat
