@@ -74,4 +74,4 @@ Windows
 irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | iex
 ```
 
-`wat update` automatically grabs these links and updates itself, unless your config defines a target named `update`. In that case, `wat update` runs the target and self-update only happens when no `update` target exists. `wat -v` shows the current version.
+`wat update` automatically grabs these links and updates itself, unless your config defines a target named `update`. `wat -v` shows the current version.
