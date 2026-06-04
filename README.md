@@ -2,7 +2,7 @@
 
 `wat` is a tiny cross-platform, language-agnostic CLI for watching file changes and executing commands.
 
-This tool is for my own personal use and may have breaking changes each minor version. If you use it, let me know how it goes!
+This tool is for my own personal and work use and may have breaking changes each minor version. If you use it, let me know how it goes!
 
 Running `wat` with no target names uses `default` if set. Otherwise, run with `wat <target>`.
 
