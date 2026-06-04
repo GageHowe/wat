@@ -75,3 +75,7 @@ irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | ie
 ```
 
 `wat update` automatically grabs these links and updates itself, unless your config defines a target named `update`. `wat -v` shows the current version.
+
+## examples
+
+TODO!
