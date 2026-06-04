@@ -4,7 +4,7 @@
 
 This tool is for my own personal use and may have breaking changes each minor version. If you use it, let me know how it goes!
 
-Running `wat` with no target names uses `default`. If `default` is not set, `wat` exits with an error.
+Running `wat` with no target names uses `default` if set. Otherwise, run with `wat <target>`.
 
 The config file is a TOML file named `watfile` or `watfile.toml`. Example:
 ```toml
@@ -76,6 +76,6 @@ irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | ie
 
 `wat update` automatically grabs these links and updates itself, unless your config defines a target named `update`. `wat -v` shows the current version.
 
-## examples
+## more examples
 
 TODO!
