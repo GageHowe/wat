@@ -74,6 +74,8 @@ Windows
 irm https://raw.githubusercontent.com/GageHowe/wat/main/scripts/install.ps1 | iex
 ```
 
+Or build and install manually.
+
 `wat update` automatically grabs these links and updates itself, unless your config defines a target named `update`. `wat -v` shows the current version.
 
 ## more examples
