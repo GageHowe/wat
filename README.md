@@ -1,8 +1,6 @@
 # wat
 
-`wat` is a tiny cross-platform, language-agnostic CLI for watching/directory file changes and executing commands.
-
-This tool is for my own personal and work use and may have breaking changes each minor version. If you use it, let me know how it goes!
+`wat` is a tiny cross-platform, language-agnostic CLI for watching/directory file changes and executing commands. This tool is for my own personal and work use and may have breaking changes each minor version. If you use it, let me know how it goes!
 
 Running `wat` with no target names uses `default` if set. Otherwise, run with `wat <target>`.
 
@@ -44,13 +42,12 @@ Each target supports:
 
 `run` supports multiple commands. They are chained in the shell with `&&`, so `run = ["cargo fmt --check", "cargo build", "cargo test"]` behaves like `cargo fmt --check && cargo build && cargo test`
 
-## execution model
+## execution
 
-* If you pass target names, `wat` runs those targets.
-* If you pass no target names, `wat` runs `default`.
-* If you pass no target names and `default` is not set, `wat` exits with an error.
-* Non-`interrupt` targets run to completion on startup and on each matching change.
-* `interrupt` targets are started once and restarted when a matching change arrives.
+```wat <target(s)>```
+
+* If you pass no target names, `wat` runs `default`. If `default` is not set, `wat` exits with an error.
+* `interrupt` targets are started once and restarted when a matching change arrives. Non-`interrupt` targets run to completion on startup and on each matching change.
 * Each target's `run` list is executed as one shell command joined with `&&`.
 
 If you want two long-running processes, use two targets and run them together instead of putting both in one `run` list.
